@@ -1,0 +1,109 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: /users/{userId}/logs
+// Document ID: {logId}
+// Fields:
+//   - id: string (required) - Unique ID
+//   - date: string (required) - ISO YYYY-MM-DD
+//   - performance: number (required) - -10 to 10
+//   - emotions: list (required) - Array of strings
+//   - notes: string (optional) - Text notes
+//   - disciplineScore: number (required) - 0 to 100
+//   - habits: list (required) - Array of {id: string, completed: bool}
+//   - uid: string (required) - Owner UID
+//
+// Collection: /users/{userId}/habits
+// Document ID: {habitId}
+// Fields:
+//   - id: string (required)
+//   - name: string (required)
+//   - icon: string (required)
+//   - color: string (required)
+//   - uid: string (required)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "ronadasakalesha@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidDailyLog(data) {
+      return hasRequiredFields(['id', 'date', 'performance', 'emotions', 'disciplineScore', 'habits', 'uid']) &&
+             hasOnlyAllowedFields(['id', 'date', 'performance', 'emotions', 'disciplineScore', 'habits', 'uid', 'notes']) &&
+             data.id is string &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
+             data.performance is number && data.performance >= -10 && data.performance <= 10 &&
+             data.emotions is list && data.emotions.size() <= 20 &&
+             data.disciplineScore is number && data.disciplineScore >= 0 && data.disciplineScore <= 100 &&
+             data.habits is list && data.habits.size() <= 50 &&
+             data.uid == request.auth.uid &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 5000));
+    }
+
+    function isValidHabit(data) {
+      return hasRequiredFields(['id', 'name', 'icon', 'color', 'uid']) &&
+             hasOnlyAllowedFields(['id', 'name', 'icon', 'color', 'uid']) &&
+             data.id is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.icon is string && data.icon.size() <= 50 &&
+             data.color is string && data.color.size() <= 50 &&
+             data.uid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) && hasOnlyAllowedFields(['role', 'email', 'name']) && (!('role' in request.resource.data) || request.resource.data.role == 'user' || isAdmin());
+      
+      match /logs/{logId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidDailyLog(request.resource.data);
+        allow update: if isOwner(userId) && isValidDailyLog(request.resource.data) && request.resource.data.uid == resource.data.uid;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /habits/{habitId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidHabit(request.resource.data);
+        allow update: if isOwner(userId) && isValidHabit(request.resource.data) && request.resource.data.uid == resource.data.uid;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

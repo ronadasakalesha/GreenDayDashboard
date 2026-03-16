@@ -1,18 +1,16 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IUser extends Document {
-  googleId: string;
   email: string;
   displayName: string;
-  photoURL?: string;
+  passwordHash: string;
   createdAt: Date;
 }
 
 const UserSchema = new Schema<IUser>({
-  googleId: { type: String, required: true, unique: true },
-  email: { type: String, required: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   displayName: { type: String, required: true },
-  photoURL: { type: String },
+  passwordHash: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 

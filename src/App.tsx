@@ -99,17 +99,15 @@ function AppContent() {
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [dateRange, setDateRange] = useState<DateRange>('All');
   const [assetFilter, setAssetFilter] = useState<AssetClass>('All');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
-  // ── On mount: check URL for token (OAuth callback) or validate existing JWT ──
+  // ── On mount: validate existing JWT ──────────────────────────────────────────
   useEffect(() => {
-    const hash = window.location.hash;
-    const tokenMatch = hash.match(/token=([^&]+)/);
-    if (tokenMatch) {
-      setToken(tokenMatch[1]);
-      // Clean the URL
-      window.history.replaceState(null, '', window.location.pathname);
-    }
-
     const existingToken = getToken();
     if (!existingToken) {
       setIsAuthReady(true);
@@ -140,8 +138,21 @@ function AppContent() {
       .catch(err => console.error('Failed to load habits:', err));
   }, [user]);
 
-  const handleLogin = () => {
-    window.location.href = '/auth/google';
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      const { token, user: me } = authMode === 'login'
+        ? await api.login(authEmail, authPassword)
+        : await api.signup(authEmail, authName, authPassword);
+      setToken(token);
+      setUser(me);
+    } catch (err: any) {
+      setAuthError(err.message || 'Something went wrong.');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -232,19 +243,81 @@ function AppContent() {
   if (!user) {
     return (
       <div className="min-h-screen bg-[#E4E3E0] flex items-center justify-center p-4">
-        <div className="max-w-md w-full border border-[#141414] bg-white p-12 text-center">
-          <h1 className="text-4xl font-serif italic tracking-tighter mb-2">GreenDay Dashboard</h1>
-          <p className="text-[10px] uppercase tracking-widest opacity-50 mb-12">Performance Calendar</p>
-          
-          <button 
-            onClick={handleLogin}
-            className="w-full flex items-center justify-center gap-3 py-4 bg-[#141414] text-[#E4E3E0] uppercase text-xs tracking-widest font-bold hover:opacity-90 transition-opacity"
-          >
-            <LogIn size={18} /> Login with Google
-          </button>
-          
-          <p className="mt-8 text-[10px] opacity-40 leading-relaxed uppercase tracking-widest">
-            Secure biometric-grade performance tracking for elite operators.
+        <div className="max-w-md w-full border border-[#141414] bg-white p-12">
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-serif italic tracking-tighter mb-2">GreenDay Dashboard</h1>
+            <p className="text-[10px] uppercase tracking-widest opacity-50">Performance Calendar</p>
+          </div>
+
+          {/* Tab toggle */}
+          <div className="flex border border-[#141414] mb-8">
+            <button
+              onClick={() => { setAuthMode('login'); setAuthError(''); }}
+              className={cn('flex-1 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors',
+                authMode === 'login' ? 'bg-[#141414] text-[#E4E3E0]' : 'hover:bg-black/5'
+              )}
+            >Sign In</button>
+            <button
+              onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+              className={cn('flex-1 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors',
+                authMode === 'signup' ? 'bg-[#141414] text-[#E4E3E0]' : 'hover:bg-black/5'
+              )}
+            >Create Account</button>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            {authMode === 'signup' && (
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Display Name</label>
+                <input
+                  type="text"
+                  value={authName}
+                  onChange={e => setAuthName(e.target.value)}
+                  placeholder="Your name"
+                  required
+                  className="w-full border border-[#141414] px-4 py-3 text-sm bg-transparent outline-none focus:bg-black/5 transition-colors"
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Email</label>
+              <input
+                type="email"
+                value={authEmail}
+                onChange={e => setAuthEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                className="w-full border border-[#141414] px-4 py-3 text-sm bg-transparent outline-none focus:bg-black/5 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Password</label>
+              <input
+                type="password"
+                value={authPassword}
+                onChange={e => setAuthPassword(e.target.value)}
+                placeholder={authMode === 'signup' ? 'Min. 8 characters' : '••••••••'}
+                required
+                className="w-full border border-[#141414] px-4 py-3 text-sm bg-transparent outline-none focus:bg-black/5 transition-colors"
+              />
+            </div>
+
+            {authError && (
+              <p className="text-[11px] text-rose-600 font-medium">{authError}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full flex items-center justify-center gap-3 py-4 bg-[#141414] text-[#E4E3E0] uppercase text-xs tracking-widest font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <LogIn size={18} />
+              {authLoading ? 'Please wait...' : authMode === 'login' ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+
+          <p className="mt-8 text-[10px] opacity-40 leading-relaxed uppercase tracking-widest text-center">
+            Secure performance tracking for elite operators.
           </p>
         </div>
       </div>
@@ -291,11 +364,7 @@ function AppContent() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full border border-[#141414] flex items-center justify-center bg-white overflow-hidden">
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt={user.displayName || ''} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                ) : (
-                  <span className="font-serif italic">{user.displayName?.charAt(0) || 'U'}</span>
-                )}
+                <span className="font-serif italic">{user.displayName?.charAt(0)?.toUpperCase() || 'U'}</span>
               </div>
               <div>
                 <p className="text-xs font-bold truncate w-24">{user.displayName}</p>

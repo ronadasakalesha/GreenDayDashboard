@@ -34,7 +34,7 @@ import {
   Brush
 } from 'recharts';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { DailyLog, Habit, Emotion, Playbook, AssetClass } from './types';
+import { DailyLog, Emotion, Playbook, AssetClass } from './types';
 import { cn } from './lib/utils';
 import { StatCard } from './components/StatCard';
 import { NavItem } from './components/NavItem';
@@ -46,12 +46,6 @@ import { api, AuthUser, getToken, setToken, clearToken } from './api';
 
 const EMOTIONS: Emotion[] = ['Calm', 'FOMO', 'Stressed', 'Motivated', 'Disciplined', 'Anxious', 'Confident'];
 
-const INITIAL_HABITS: Habit[] = [
-  { id: '1', name: 'Deep Work', icon: 'Zap', color: 'text-blue-500' },
-  { id: '2', name: 'Exercise', icon: 'Activity', color: 'text-emerald-500' },
-  { id: '3', name: 'Meditation', icon: 'Brain', color: 'text-purple-500' },
-  { id: '4', name: 'Reading', icon: 'Book', color: 'text-orange-500' },
-];
 
 const INITIAL_PLAYBOOKS: Playbook[] = [
   { 
@@ -91,7 +85,6 @@ function AppContent() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [logs, setLogs] = useState<DailyLog[]>([]);
-  const [habits, setHabits] = useState<Habit[]>(INITIAL_HABITS);
   const [playbooks] = useState<Playbook[]>(INITIAL_PLAYBOOKS);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isEntryOpen, setIsEntryOpen] = useState(false);
@@ -125,17 +118,13 @@ function AppContent() {
       });
   }, []);
 
-  // ── Load logs and habits when user is authenticated ──────────────────────────
+  // ── Load logs when user is authenticated ──────────────────────────
   useEffect(() => {
     if (!user) return;
 
     api.getLogs()
       .then(fetchedLogs => setLogs(fetchedLogs))
       .catch(err => console.error('Failed to load logs:', err));
-
-    api.getHabits()
-      .then(fetchedHabits => setHabits(fetchedHabits))
-      .catch(err => console.error('Failed to load habits:', err));
   }, [user]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -227,8 +216,9 @@ function AppContent() {
         if (log.performance > 0) return acc + 1;
         return acc; 
       }, 0);
+    const totalPnL = filteredLogs.reduce((acc, l) => acc + l.performance, 0);
 
-    return { winRate, avgDiscipline, currentStreak };
+    return { winRate, avgDiscipline, currentStreak, totalPnL };
   }, [filteredLogs]);
 
 
@@ -433,7 +423,13 @@ function AppContent() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#141414] border border-[#141414] mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-px bg-[#141414] border border-[#141414] mb-12">
+              <StatCard 
+                label="Total P&L" 
+                value={stats.totalPnL >= 0 ? `+${assetFilter === 'Stocks' ? '₹' : '$'}${stats.totalPnL.toLocaleString()}` : `-${assetFilter === 'Stocks' ? '₹' : '$'}${Math.abs(stats.totalPnL).toLocaleString()}`} 
+                sub="Cumulative performance" 
+                trend={stats.totalPnL > 0 ? 'up' : stats.totalPnL < 0 ? 'down' : undefined}
+              />
               <StatCard label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} sub="Positive performance days" />
               <StatCard label="Discipline Score" value={Math.round(stats.avgDiscipline).toString()} sub="Protocol adherence avg" />
               <StatCard label="Current Streak" value={`${stats.currentStreak} Days`} sub="Consecutive green days" />
@@ -453,7 +449,6 @@ function AppContent() {
                 <Calendar 
                   currentDate={currentDate} 
                   logs={logs} 
-                  habits={habits}
                   onSelectDate={(date) => {
                     setSelectedDate(date);
                     setIsEntryOpen(true);
@@ -507,13 +502,13 @@ function AppContent() {
                                 <div className="flex justify-between gap-8">
                                   <span>Equity</span>
                                   <span className={cn("font-serif italic text-sm", data.value >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                                    {data.value > 0 ? `+${data.value}` : data.value}
+                                    {data.value >= 0 ? `+$${data.value.toLocaleString()}` : `-$${Math.abs(data.value).toLocaleString()}`}
                                   </span>
                                 </div>
                                 <div className="flex justify-between gap-8 mt-1">
                                   <span>Daily Perf</span>
                                   <span className={cn(data.performance >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                                    {data.performance > 0 ? `+${data.performance}` : data.performance}
+                                    {data.performance >= 0 ? `+${assetFilter === 'Stocks' ? '₹' : '$'}${data.performance.toLocaleString()}` : `-${assetFilter === 'Stocks' ? '₹' : '$'}${Math.abs(data.performance).toLocaleString()}`}
                                   </span>
                                 </div>
                               </div>
@@ -542,7 +537,7 @@ function AppContent() {
           <div className="max-w-4xl">
             <header className="mb-12">
               <h2 className="text-4xl font-serif italic tracking-tight">Strategy Playbooks</h2>
-              <p className="text-sm opacity-60">Explicit rules for your personal strategies and habits.</p>
+              <p className="text-sm opacity-60">Explicit rules for your personal strategies.</p>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -559,6 +554,7 @@ function AppContent() {
                     title={playbook.title} 
                     icon={<PlaybookIcon icon={playbook.icon} className={playbook.color} />}
                     rules={playbook.rules}
+                    currencySymbol={assetFilter === 'Stocks' ? '₹' : '$'}
                     stats={{
                       usage: playbookLogs.length,
                       performance: totalPerf,
@@ -664,7 +660,7 @@ function AppContent() {
                             "text-xl font-serif italic",
                             totalPerf > 0 ? "text-emerald-600" : totalPerf < 0 ? "text-rose-600" : ""
                           )}>
-                            {totalPerf > 0 ? `+${totalPerf}` : totalPerf}
+                             {totalPerf >= 0 ? `+${assetFilter === 'Stocks' ? '₹' : '$'}${totalPerf.toLocaleString()}` : `-${assetFilter === 'Stocks' ? '₹' : '$'}${Math.abs(totalPerf).toLocaleString()}`}
                           </p>
                         </div>
                         <div className="text-right">
@@ -688,7 +684,6 @@ function AppContent() {
           onClose={() => setIsEntryOpen(false)} 
           onSave={saveLog}
           existingLog={logs.find(l => l.date === format(selectedDate, 'yyyy-MM-dd'))}
-          habits={habits}
           playbooks={playbooks}
         />
       )}
@@ -714,10 +709,11 @@ function PlaybookIcon({ icon, size = 16, className = "" }: { icon: string, size?
   }
 }
 
-function PlaybookCard({ title, icon, rules, stats }: { 
+function PlaybookCard({ title, icon, rules, stats, currencySymbol = '$' }: { 
   title: string, 
   icon: React.ReactNode, 
   rules: string[],
+  currencySymbol?: string,
   stats?: { usage: number, performance: number, winRate: number }
 }) {
   return (
@@ -750,7 +746,7 @@ function PlaybookCard({ title, icon, rules, stats }: {
               "text-sm font-serif italic",
               stats.performance > 0 ? "text-emerald-600" : stats.performance < 0 ? "text-rose-600" : ""
             )}>
-              {stats.performance > 0 ? `+${stats.performance}` : stats.performance}
+              {stats.performance >= 0 ? `+${currencySymbol}${stats.performance.toLocaleString()}` : `-${currencySymbol}${Math.abs(stats.performance).toLocaleString()}`}
             </p>
           </div>
           <div>

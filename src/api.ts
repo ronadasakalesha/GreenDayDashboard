@@ -55,8 +55,4 @@ export const api = {
   getLogs: () => request<any[]>('/api/logs'),
   saveLog: (log: any) => request<any>('/api/logs', { method: 'POST', body: JSON.stringify(log) }),
   deleteLog: (id: string) => request<any>(`/api/logs/${id}`, { method: 'DELETE' }),
-
-  // Habits
-  getHabits: () => request<any[]>('/api/habits'),
-  saveHabit: (habit: any) => request<any>('/api/habits', { method: 'POST', body: JSON.stringify(habit) }),
 };

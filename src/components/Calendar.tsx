@@ -8,26 +8,15 @@ import {
   startOfWeek,
   endOfWeek
 } from 'date-fns';
-import { Zap, Activity, Brain, BookOpen, CheckCircle2, Wind, Eye, AlertCircle, Rocket, Target, AlertTriangle, Trophy } from 'lucide-react';
+import { Wind, Eye, AlertCircle, Rocket, Target, AlertTriangle, Trophy } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { DailyLog, Habit, Emotion } from '../types';
+import { DailyLog, Emotion } from '../types';
 
 interface CalendarProps {
   currentDate: Date;
   logs: DailyLog[];
-  habits: Habit[];
   onSelectDate: (date: Date) => void;
 }
-
-const HabitIcon = ({ id, size = 12, className = "" }: { id: string, size?: number, className?: string }) => {
-  switch (id) {
-    case '1': return <Zap size={size} className={className} />;
-    case '2': return <Activity size={size} className={className} />;
-    case '3': return <Brain size={size} className={className} />;
-    case '4': return <BookOpen size={size} className={className} />;
-    default: return <CheckCircle2 size={size} className={className} />;
-  }
-};
 
 const EmotionIcon = ({ type, size = 10, className = "" }: { type: Emotion, size?: number, className?: string }) => {
   switch (type) {
@@ -42,7 +31,7 @@ const EmotionIcon = ({ type, size = 10, className = "" }: { type: Emotion, size?
   }
 };
 
-export function Calendar({ currentDate, logs, habits, onSelectDate }: CalendarProps) {
+export function Calendar({ currentDate, logs, onSelectDate }: CalendarProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart);
@@ -62,24 +51,14 @@ export function Calendar({ currentDate, logs, habits, onSelectDate }: CalendarPr
         const log = logs.find(l => l.date === dateStr);
         const isCurrentMonth = day.getMonth() === currentDate.getMonth();
         
+        const currencySymbol = log?.assetClass === 'Stocks' ? '₹' : '$';
+        
         let bgColor = "bg-white";
         if (log) {
           if (log.performance > 0) bgColor = "bg-emerald-100 hover:bg-emerald-200";
           else if (log.performance < 0) bgColor = "bg-rose-100 hover:bg-rose-200";
           else bgColor = "bg-gray-100 hover:bg-gray-200";
         }
-
-        const completedHabits = log 
-          ? log.habits
-              .filter(h => h.completed)
-              .map(h => ({
-                ...h,
-                definition: habits.find(def => def.id === h.id)
-              }))
-              .filter(h => h.definition)
-          : [];
-
-        const primaryHabit = completedHabits[0];
 
         return (
           <div key={i} className="relative group">
@@ -96,15 +75,10 @@ export function Calendar({ currentDate, logs, habits, onSelectDate }: CalendarPr
               {log && (
                 <div className="space-y-1">
                   <div className={cn(
-                    "text-xs font-serif italic font-bold",
+                    "text-[10px] font-serif italic font-bold",
                     log.performance > 0 ? "text-emerald-700" : log.performance < 0 ? "text-rose-700" : "text-gray-600"
                   )}>
-                    {log.performance > 0 ? `+${log.performance}` : log.performance}
-                  </div>
-                  <div className="flex gap-0.5">
-                    {log.habits.filter(h => h.completed).map((_, idx) => (
-                      <div key={idx} className="w-1 h-1 rounded-full bg-[#141414]" />
-                    ))}
+                    {log.performance > 0 ? `+${currencySymbol}${log.performance.toLocaleString()}` : log.performance < 0 ? `-${currencySymbol}${Math.abs(log.performance).toLocaleString()}` : `${currencySymbol}0`}
                   </div>
                 </div>
               )}
@@ -120,7 +94,7 @@ export function Calendar({ currentDate, logs, habits, onSelectDate }: CalendarPr
                       "text-sm font-serif italic",
                       log.performance > 0 ? "text-emerald-400" : log.performance < 0 ? "text-rose-400" : ""
                     )}>
-                      {log.performance > 0 ? `+${log.performance}` : log.performance} P&L
+                      {log.performance > 0 ? `+${currencySymbol}${log.performance.toLocaleString()}` : log.performance < 0 ? `-${currencySymbol}${Math.abs(log.performance).toLocaleString()}` : `${currencySymbol}0`} P&L
                     </p>
                   </div>
                   <div className="text-right">
@@ -140,37 +114,6 @@ export function Calendar({ currentDate, logs, habits, onSelectDate }: CalendarPr
                         </span>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {completedHabits.length > 0 && (
-                  <div className="space-y-3">
-                    {primaryHabit && (
-                      <div className="bg-white/5 p-2 border border-white/10">
-                        <p className="font-bold opacity-50 mb-1.5 flex items-center gap-1.5">
-                          <CheckCircle2 size={10} className="text-emerald-400" /> Key Achievement
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <div className={cn("p-1.5 bg-white/10", primaryHabit.definition?.color)}>
-                            <HabitIcon id={primaryHabit.id} size={14} />
-                          </div>
-                          <span className="text-xs font-serif italic normal-case">{primaryHabit.definition?.name}</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {completedHabits.length > 1 && (
-                      <div>
-                        <p className="font-bold opacity-50 mb-1.5">Other Habits</p>
-                        <div className="flex flex-wrap gap-2">
-                          {completedHabits.slice(1).map((h, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5 opacity-80" title={h.definition?.name}>
-                              <HabitIcon id={h.id} size={12} className={h.definition?.color} />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
                 

@@ -8,7 +8,6 @@ export interface ILog extends Document {
   emotions: string[];
   notes: string;
   disciplineScore: number;
-  habits: { id: string; completed: boolean }[];
   playbookIds: string[];
   assetClass: string;
 }
@@ -21,10 +20,6 @@ const LogSchema = new Schema<ILog>({
   emotions: [{ type: String }],
   notes: { type: String, default: '' },
   disciplineScore: { type: Number, default: 0 },
-  habits: [{
-    id: String,
-    completed: Boolean,
-  }],
   playbookIds: [{ type: String }],
   assetClass: { type: String, default: 'Stocks' },
 });

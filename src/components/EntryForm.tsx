@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { XCircle, CheckCircle2, Zap, ShieldAlert, BookOpen, Target, Coins, Briefcase } from 'lucide-react';
+import { XCircle, Zap, ShieldAlert, BookOpen, Target, Coins, Briefcase } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { DailyLog, Habit, Emotion, Playbook, AssetClass } from '../types';
+import { DailyLog, Emotion, Playbook, AssetClass } from '../types';
 
 const EMOTIONS: Emotion[] = ['Calm', 'FOMO', 'Stressed', 'Motivated', 'Disciplined', 'Anxious', 'Confident'];
 
@@ -21,18 +21,14 @@ interface EntryFormProps {
   onClose: () => void;
   onSave: (log: DailyLog) => void;
   existingLog?: DailyLog;
-  habits: Habit[];
   playbooks: Playbook[];
 }
 
-export function EntryForm({ date, onClose, onSave, existingLog, habits, playbooks }: EntryFormProps) {
+export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: EntryFormProps) {
   const [performance, setPerformance] = useState(existingLog?.performance || 0);
   const [discipline, setDiscipline] = useState(existingLog?.disciplineScore || 80);
   const [notes, setNotes] = useState(existingLog?.notes || '');
   const [selectedEmotions, setSelectedEmotions] = useState<Emotion[]>(existingLog?.emotions || []);
-  const [completedHabits, setCompletedHabits] = useState<string[]>(
-    existingLog?.habits.filter(h => h.completed).map(h => h.id) || []
-  );
   const [selectedPlaybooks, setSelectedPlaybooks] = useState<string[]>(existingLog?.playbookIds || []);
   const [assetClass, setAssetClass] = useState<Exclude<AssetClass, 'All'>>(
     (existingLog?.assetClass as Exclude<AssetClass, 'All'>) || 'Stocks'
@@ -42,14 +38,8 @@ export function EntryForm({ date, onClose, onSave, existingLog, habits, playbook
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (selectedEmotions.length === 0) {
       setError("Please select at least one emotion to reflect your state.");
-      return;
-    }
-
-    if (performance < -10 || performance > 10) {
-      setError("Performance value must be between -10 and 10.");
       return;
     }
 
@@ -61,10 +51,6 @@ export function EntryForm({ date, onClose, onSave, existingLog, habits, playbook
       disciplineScore: discipline,
       notes,
       emotions: selectedEmotions,
-      habits: habits.map(h => ({
-        id: h.id,
-        completed: completedHabits.includes(h.id)
-      })),
       playbookIds: selectedPlaybooks,
       assetClass
     });
@@ -77,19 +63,14 @@ export function EntryForm({ date, onClose, onSave, existingLog, habits, playbook
     );
   };
 
-  const toggleHabit = (id: string) => {
-    setError(null);
-    setCompletedHabits(prev => 
-      prev.includes(id) ? prev.filter(h => h !== id) : [...prev, id]
-    );
-  };
-
   const togglePlaybook = (id: string) => {
     setError(null);
     setSelectedPlaybooks(prev => 
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
   };
+
+  const currencySymbol = assetClass === 'Stocks' ? '₹' : '$';
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -135,20 +116,26 @@ export function EntryForm({ date, onClose, onSave, existingLog, habits, playbook
             <div className="space-y-4">
               <label className="text-[10px] uppercase tracking-widest font-bold">Performance (P&L)</label>
               <div className="flex items-center gap-4">
-                <input 
-                  type="range" min="-10" max="10" step="1" 
-                  value={performance} 
-                  onChange={(e) => {
-                    setError(null);
-                    setPerformance(parseInt(e.target.value));
-                  }}
-                  className="flex-1 accent-[#141414]"
-                />
+                <div className="relative flex-1">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm opacity-50">{currencySymbol}</span>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={performance === 0 ? '' : performance} 
+                    onChange={(e) => {
+                      setError(null);
+                      const val = parseFloat(e.target.value);
+                      setPerformance(isNaN(val) ? 0 : val);
+                    }}
+                    className="w-full bg-white border border-[#141414] pl-8 pr-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#141414]"
+                  />
+                </div>
                 <span className={cn(
-                  "text-2xl font-serif italic w-12 text-center",
+                  "text-xl font-serif italic min-w-[60px] text-right",
                   performance > 0 ? "text-emerald-600" : performance < 0 ? "text-rose-600" : ""
                 )}>
-                  {performance > 0 ? `+${performance}` : performance}
+                  {performance > 0 ? `+${currencySymbol}${performance.toLocaleString()}` : performance < 0 ? `-${currencySymbol}${Math.abs(performance).toLocaleString()}` : `${currencySymbol}0`}
                 </span>
               </div>
             </div>
@@ -184,26 +171,6 @@ export function EntryForm({ date, onClose, onSave, existingLog, habits, playbook
                   )}
                 >
                   {emotion}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-[10px] uppercase tracking-widest font-bold">Habit Checklist</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {habits.map(habit => (
-                <button
-                  key={habit.id}
-                  type="button"
-                  onClick={() => toggleHabit(habit.id)}
-                  className={cn(
-                    "p-4 border border-[#141414] flex flex-col items-center gap-2 transition-colors",
-                    completedHabits.includes(habit.id) ? "bg-[#141414] text-[#E4E3E0]" : "hover:bg-black/5"
-                  )}
-                >
-                  <CheckCircle2 size={20} className={completedHabits.includes(habit.id) ? "text-emerald-400" : "opacity-20"} />
-                  <span className="text-[10px] uppercase tracking-widest font-bold">{habit.name}</span>
                 </button>
               ))}
             </div>

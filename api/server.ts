@@ -4,7 +4,6 @@ import cors from 'cors';
 import { connectDB } from '../server/db.js';
 import authRouter from '../server/routes/auth.js';
 import logsRouter from '../server/routes/logs.js';
-import habitsRouter from '../server/routes/habits.js';
 
 const app = express();
 
@@ -13,7 +12,6 @@ app.use(express.json());
 
 app.use('/auth', authRouter);
 app.use('/api/logs', logsRouter);
-app.use('/api/habits', habitsRouter);
 
 // Health check — shows DB connection status for debugging
 app.get('/health', async (_req, res) => {

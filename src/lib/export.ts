@@ -3,14 +3,13 @@ import { DailyLog } from '../types';
 export function exportToCSV(logs: DailyLog[]) {
   if (logs.length === 0) return;
 
-  const headers = ['Date', 'Performance', 'Discipline Score', 'Emotions', 'Notes', 'Habits Completed'];
+  const headers = ['Date', 'Performance', 'Discipline Score', 'Emotions', 'Notes'];
   const rows = logs.map(log => [
     log.date,
     log.performance,
     log.disciplineScore,
     log.emotions.join(';'),
     log.notes.replace(/"/g, '""'),
-    log.habits.filter(h => h.completed).length
   ]);
 
   const csvContent = [

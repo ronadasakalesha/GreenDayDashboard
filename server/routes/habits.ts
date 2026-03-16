@@ -21,25 +21,12 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-const INITIAL_HABITS = [
-  { id: '1', name: 'Deep Work', icon: 'Zap', color: 'text-blue-500' },
-  { id: '2', name: 'Exercise', icon: 'Activity', color: 'text-emerald-500' },
-  { id: '3', name: 'Meditation', icon: 'Brain', color: 'text-purple-500' },
-  { id: '4', name: 'Reading', icon: 'Book', color: 'text-orange-500' },
-];
 
 // GET /api/habits
 router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
-    let habits = await Habit.find({ userId }).lean();
-
-    if (habits.length === 0) {
-      const seeded = INITIAL_HABITS.map(h => ({ ...h, userId }));
-      await Habit.insertMany(seeded);
-      return res.json(INITIAL_HABITS);
-    }
-
+    const habits = await Habit.find({ userId }).lean();
     res.json(habits.map(({ userId: _uid, _id, __v, ...rest }) => rest));
   } catch (error) {
     console.error('GET /api/habits error:', error);

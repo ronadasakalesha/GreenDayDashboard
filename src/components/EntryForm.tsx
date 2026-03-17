@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { XCircle, Zap, ShieldAlert, BookOpen, Target, Coins, Briefcase } from 'lucide-react';
+import { XCircle, Zap, ShieldAlert, BookOpen, Target, Activity, Coins, Briefcase } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { DailyLog, Emotion, Playbook, AssetClass } from '../types';
 
@@ -12,6 +12,7 @@ const PlaybookIcon = ({ icon, size = 16, className = "" }: { icon: string, size?
     case 'ShieldAlert': return <ShieldAlert size={size} className={className} />;
     case 'BookOpen': return <BookOpen size={size} className={className} />;
     case 'Target': return <Target size={size} className={className} />;
+    case 'Activity': return <Activity size={size} className={className} />;
     default: return <BookOpen size={size} className={className} />;
   }
 };

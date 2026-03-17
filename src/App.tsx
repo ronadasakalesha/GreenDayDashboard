@@ -50,10 +50,10 @@ const EMOTIONS: Emotion[] = ['Calm', 'FOMO', 'Stressed', 'Motivated', 'Disciplin
 const INITIAL_PLAYBOOKS: Playbook[] = [
   { 
     id: 'p1', 
-    title: "Morning Protocol", 
+    title: "Day Start strategy", 
     icon: 'Zap',
     color: 'text-blue-500',
-    rules: ["No phone for first 60 mins", "15 mins meditation", "Deep work block starting 8:00 AM"]
+    rules: ["Review daily bias", "Mark HOD/LOD of previous day", "Check economic calendar"]
   },
   { 
     id: 'p2', 
@@ -75,6 +75,20 @@ const INITIAL_PLAYBOOKS: Playbook[] = [
     icon: 'Target',
     color: 'text-emerald-500',
     rules: ["Phone in another room", "Single-tasking only", "90-minute focus sprints"]
+  },
+  { 
+    id: 'p5', 
+    title: "Blue Signals", 
+    icon: 'Activity',
+    color: 'text-blue-600',
+    rules: ["Wait for Blue Anchor signal", "Confirm with volume delta", "Entry on 5m pull-back"]
+  },
+  { 
+    id: 'p6', 
+    title: "BlueSync Strategy", 
+    icon: 'Zap',
+    color: 'text-blue-400',
+    rules: ["Sync with higher timeframe trend", "Enter on momentum breakout", "Tight trailing stop loss"]
   },
 ];
 
@@ -705,6 +719,7 @@ function PlaybookIcon({ icon, size = 16, className = "" }: { icon: string, size?
     case 'ShieldAlert': return <ShieldAlert size={size} className={className} />;
     case 'BookOpen': return <BookOpen size={size} className={className} />;
     case 'Target': return <Target size={size} className={className} />;
+    case 'Activity': return <Activity size={size} className={className} />;
     default: return <BookOpen size={size} className={className} />;
   }
 }

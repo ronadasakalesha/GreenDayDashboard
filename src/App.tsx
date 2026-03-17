@@ -45,6 +45,7 @@ import { Coins, Briefcase, Layers } from 'lucide-react';
 import { api, AuthUser, getToken, setToken, clearToken } from './api';
 
 const EMOTIONS: Emotion[] = ['Calm', 'FOMO', 'Stressed', 'Motivated', 'Disciplined', 'Anxious', 'Confident'];
+const USD_TO_INR = 85;
 
 
 const INITIAL_PLAYBOOKS: Playbook[] = [
@@ -185,7 +186,13 @@ function AppContent() {
   };
 
   const filteredLogs = useMemo(() => {
-    let filtered = [...logs];
+    let filtered = logs.map(log => {
+      let normalizedPerformance = log.performance;
+      if (assetFilter === 'All' && log.assetClass === 'Crypto') {
+        normalizedPerformance = log.performance * USD_TO_INR;
+      }
+      return { ...log, normalizedPerformance };
+    });
 
     if (assetFilter !== 'All') {
       filtered = filtered.filter(log => log.assetClass === assetFilter);
@@ -208,11 +215,11 @@ function AppContent() {
     return filteredLogs
       .sort((a, b) => a.date.localeCompare(b.date))
       .map(log => {
-        cumulative += log.performance;
+        cumulative += log.normalizedPerformance;
         return {
           date: log.date,
           value: cumulative,
-          performance: log.performance
+          performance: log.normalizedPerformance
         };
       });
   }, [filteredLogs]);
@@ -230,7 +237,7 @@ function AppContent() {
         if (log.performance > 0) return acc + 1;
         return acc; 
       }, 0);
-    const totalPnL = filteredLogs.reduce((acc, l) => acc + l.performance, 0);
+    const totalPnL = filteredLogs.reduce((acc, l) => acc + l.normalizedPerformance, 0);
 
     return { winRate, avgDiscipline, currentStreak, totalPnL };
   }, [filteredLogs]);
@@ -440,7 +447,7 @@ function AppContent() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-px bg-[#141414] border border-[#141414] mb-12">
               <StatCard 
                 label="Total P&L" 
-                value={stats.totalPnL >= 0 ? `+${assetFilter === 'Stocks' ? '₹' : '$'}${stats.totalPnL.toLocaleString()}` : `-${assetFilter === 'Stocks' ? '₹' : '$'}${Math.abs(stats.totalPnL).toLocaleString()}`} 
+                value={stats.totalPnL >= 0 ? `+${assetFilter === 'Crypto' ? '$' : '₹'}${stats.totalPnL.toLocaleString()}` : `-${assetFilter === 'Crypto' ? '$' : '₹'}${Math.abs(stats.totalPnL).toLocaleString()}`} 
                 sub="Cumulative performance" 
                 trend={stats.totalPnL > 0 ? 'up' : stats.totalPnL < 0 ? 'down' : undefined}
               />
@@ -516,13 +523,13 @@ function AppContent() {
                                 <div className="flex justify-between gap-8">
                                   <span>Equity</span>
                                   <span className={cn("font-serif italic text-sm", data.value >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                                    {data.value >= 0 ? `+$${data.value.toLocaleString()}` : `-$${Math.abs(data.value).toLocaleString()}`}
+                                    {data.value >= 0 ? `+${assetFilter === 'Crypto' ? '$' : '₹'}${data.value.toLocaleString()}` : `-${assetFilter === 'Crypto' ? '$' : '₹'}${Math.abs(data.value).toLocaleString()}`}
                                   </span>
                                 </div>
                                 <div className="flex justify-between gap-8 mt-1">
                                   <span>Daily Perf</span>
                                   <span className={cn(data.performance >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                                    {data.performance >= 0 ? `+${assetFilter === 'Stocks' ? '₹' : '$'}${data.performance.toLocaleString()}` : `-${assetFilter === 'Stocks' ? '₹' : '$'}${Math.abs(data.performance).toLocaleString()}`}
+                                    {data.performance >= 0 ? `+${assetFilter === 'Crypto' ? '$' : '₹'}${data.performance.toLocaleString()}` : `-${assetFilter === 'Crypto' ? '$' : '₹'}${Math.abs(data.performance).toLocaleString()}`}
                                   </span>
                                 </div>
                               </div>
@@ -554,13 +561,49 @@ function AppContent() {
               <p className="text-sm opacity-60">Explicit rules for your personal strategies.</p>
             </header>
 
+            <div className="flex flex-wrap items-center gap-4 mb-8">
+              <div className="flex border border-[#141414] bg-white">
+                {(['All', 'Stocks', 'Crypto'] as AssetClass[]).map((asset) => (
+                  <button
+                    key={asset}
+                    onClick={() => setAssetFilter(asset)}
+                    className={cn(
+                      "px-4 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors flex items-center gap-2",
+                      assetFilter === asset ? "bg-[#141414] text-[#E4E3E0]" : "hover:bg-black/5"
+                    )}
+                  >
+                    {asset === 'Stocks' && <Briefcase size={12} />}
+                    {asset === 'Crypto' && <Coins size={12} />}
+                    {asset === 'All' && <Layers size={12} />}
+                    {asset}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex border border-[#141414] bg-white">
+                {(['7D', '30D', '90D', 'All'] as DateRange[]).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setDateRange(range)}
+                    className={cn(
+                      "px-4 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors",
+                      dateRange === range ? "bg-[#141414] text-[#E4E3E0]" : "hover:bg-black/5"
+                    )}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {playbooks.map(playbook => {
                 const playbookLogs = filteredLogs.filter(l => l.playbookIds?.includes(playbook.id));
-                const totalPerf = playbookLogs.reduce((sum, l) => sum + l.performance, 0);
                 const winRate = playbookLogs.length > 0 
                   ? (playbookLogs.filter(l => l.performance > 0).length / playbookLogs.length * 100).toFixed(0)
                   : 0;
+                
+                const playbookPerf = playbookLogs.reduce((sum, l) => sum + l.normalizedPerformance, 0);
 
                 return (
                   <PlaybookCard 
@@ -568,10 +611,10 @@ function AppContent() {
                     title={playbook.title} 
                     icon={<PlaybookIcon icon={playbook.icon} className={playbook.color} />}
                     rules={playbook.rules}
-                    currencySymbol={assetFilter === 'Stocks' ? '₹' : '$'}
+                    currencySymbol={assetFilter === 'Crypto' ? '$' : '₹'}
                     stats={{
                       usage: playbookLogs.length,
-                      performance: totalPerf,
+                      performance: playbookPerf,
                       winRate: Number(winRate)
                     }}
                   />
@@ -617,7 +660,7 @@ function AppContent() {
                       const totalPerf = playbookLogs.reduce((sum, l) => sum + l.performance, 0);
                       return {
                         name: p.title,
-                        performance: totalPerf
+                        performance: playbookLogs.reduce((sum, l) => sum + l.normalizedPerformance, 0)
                       };
                     })}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
@@ -674,7 +717,7 @@ function AppContent() {
                             "text-xl font-serif italic",
                             totalPerf > 0 ? "text-emerald-600" : totalPerf < 0 ? "text-rose-600" : ""
                           )}>
-                             {totalPerf >= 0 ? `+${assetFilter === 'Stocks' ? '₹' : '$'}${totalPerf.toLocaleString()}` : `-${assetFilter === 'Stocks' ? '₹' : '$'}${Math.abs(totalPerf).toLocaleString()}`}
+                             {totalPerf >= 0 ? `+${assetFilter === 'Crypto' ? '$' : '₹'}${playbookLogs.reduce((sum, l) => sum + l.normalizedPerformance, 0).toLocaleString()}` : `-${assetFilter === 'Crypto' ? '$' : '₹'}${Math.abs(playbookLogs.reduce((sum, l) => sum + l.normalizedPerformance, 0)).toLocaleString()}`}
                           </p>
                         </div>
                         <div className="text-right">

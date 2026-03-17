@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
-import { Play, Bell, AlertCircle, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
+import { Play, Bell, AlertCircle, TrendingUp, TrendingDown, ArrowRight, BrainCircuit } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '../lib/utils';
 
 interface Signal {
   _id: string;
@@ -13,6 +14,8 @@ interface Signal {
   target: number;
   time: string;
   strategy: string;
+  nnScore: number;
+  grade: string;
 }
 
 const StockScreener: React.FC = () => {
@@ -24,7 +27,7 @@ const StockScreener: React.FC = () => {
 
   useEffect(() => {
     fetchSignals();
-    const interval = setInterval(fetchSignals, 30000); // Poll every 30 seconds
+    const interval = setInterval(fetchSignals, 30000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -45,7 +48,7 @@ const StockScreener: React.FC = () => {
     setIsScanning(true);
     try {
       await api.triggerScan();
-      setTimeout(() => setIsScanning(false), 5000); // Visual feedback
+      setTimeout(() => setIsScanning(false), 5000); 
     } catch (err) {
       console.error('Failed to start scan', err);
       setIsScanning(false);
@@ -53,102 +56,122 @@ const StockScreener: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 lg:p-10 max-w-7xl mx-auto space-y-12">
       <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" />
       
-      <header className="flex justify-between items-center bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-sm">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-[#141414] pb-10">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-serif italic tracking-tighter text-[#141414]">
             Stock Screener
           </h1>
-          <p className="text-slate-400 mt-1">Real-time strategy monitoring</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#141414]/50 mt-2">
+            Real-time Confluence Intelligence
+          </p>
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`p-3 rounded-xl border transition-all ${
-              soundEnabled ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-slate-800 border-slate-700 text-slate-500'
-            }`}
+            className={cn(
+              "p-4 border border-[#141414] transition-colors",
+              soundEnabled ? "bg-[#141414] text-[#E4E3E0]" : "hover:bg-[#141414]/5"
+            )}
           >
-            <Bell size={20} className={soundEnabled ? 'animate-pulse' : ''} />
+            <Bell size={18} className={soundEnabled ? 'animate-pulse' : ''} />
           </button>
           <button
+            type="button"
             onClick={startScan}
             disabled={isScanning}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-              isScanning 
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
-                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20'
-            }`}
+            className="group flex items-center gap-3 px-8 py-4 bg-[#141414] text-[#E4E3E0] text-[10px] uppercase tracking-[0.2em] font-bold hover:opacity-90 transition-all disabled:opacity-50"
           >
             {isScanning ? (
-              <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-[#E4E3E0]/30 border-t-[#E4E3E0] rounded-full animate-spin" />
             ) : (
-              <Play size={18} fill="currentColor" />
+              <Play size={14} fill="currentColor" />
             )}
-            {isScanning ? 'Scanning...' : 'Run Scan'}
+            {isScanning ? 'SCANNING' : 'RUN ENGINE'}
           </button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         <AnimatePresence mode='popLayout'>
           {signals.map((signal) => (
             <motion.div
               key={signal._id}
               layout
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: -20 }}
-              className={`relative overflow-hidden group p-6 rounded-2xl border transition-all ${
-                signal.type === 'BUY' 
-                  ? 'bg-emerald-950/20 border-emerald-500/20 hover:border-emerald-500/40' 
-                  : 'bg-rose-950/20 border-rose-500/20 hover:border-rose-500/40'
-              }`}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="border border-[#141414] bg-white flex flex-col group"
             >
-              {/* Background Glow */}
-              <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none transition-all group-hover:opacity-30 ${
-                signal.type === 'BUY' ? 'bg-emerald-500' : 'bg-rose-500'
-              }`} />
-
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <span className="text-xs font-medium text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-1 rounded">
-                    {signal.strategy}
-                  </span>
-                  <h3 className="text-xl font-bold text-white mt-2 mb-1">{signal.symbol}</h3>
-                  <p className="text-sm text-slate-500">{signal.name}</p>
+              {/* Card Header with Grade */}
+              <div className="p-6 border-b border-[#141414] flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 flex items-center justify-center font-serif italic text-lg border border-[#141414]",
+                    signal.grade === 'A+' ? "bg-[#141414] text-[#E4E3E0]" : "bg-white"
+                  )}>
+                    {signal.grade}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold tracking-tighter">{signal.symbol}</h3>
+                    <p className="text-[9px] uppercase tracking-widest opacity-40">{signal.name}</p>
+                  </div>
                 </div>
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                  signal.type === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
-                }`}>
-                  {signal.type === 'BUY' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                <div className={cn(
+                  "px-3 py-1 border border-[#141414] text-[9px] font-bold uppercase tracking-widest",
+                  signal.type === 'BUY' ? "bg-emerald-50 text-emerald-900" : "bg-rose-50 text-rose-900"
+                )}>
                   {signal.type}
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 py-4 border-y border-slate-800/50">
-                <div className="text-center">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Entry</p>
-                  <p className="text-sm font-mono text-white">₹{signal.entryPrice.toFixed(2)}</p>
+              {/* Strategy & Time */}
+              <div className="px-6 py-4 bg-[#141414]/[0.02] flex justify-between items-center border-b border-[#141414]/10">
+                <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest opacity-60">
+                  <BrainCircuit size={12} />
+                  {signal.strategy}
                 </div>
-                <div className="text-center border-x border-slate-800/50 px-2">
-                  <p className="text-[10px] text-rose-500 uppercase font-bold mb-1">Stoploss</p>
-                  <p className="text-sm font-mono text-rose-400">₹{signal.stopLoss.toFixed(2)}</p>
+                <span className="text-[9px] font-mono opacity-40">
+                  {new Date(signal.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+              </div>
+
+              {/* Levels Grid */}
+              <div className="grid grid-cols-3 divide-x divide-[#141414]/10">
+                <div className="p-5 text-center">
+                  <p className="text-[8px] uppercase tracking-widest opacity-40 mb-2">Entry</p>
+                  <p className="text-sm font-bold">₹{signal.entryPrice.toLocaleString()}</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Target</p>
-                  <p className="text-sm font-mono text-emerald-400">₹{signal.target.toFixed(2)}</p>
+                <div className="p-5 text-center">
+                  <p className="text-[8px] uppercase tracking-widest opacity-40 mb-2">Stop</p>
+                  <p className="text-sm font-bold text-rose-600">₹{signal.stopLoss.toLocaleString()}</p>
+                </div>
+                <div className="p-5 text-center">
+                  <p className="text-[8px] uppercase tracking-widest opacity-40 mb-2">Target</p>
+                  <p className="text-sm font-bold text-emerald-600">₹{signal.target.toLocaleString()}</p>
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-between items-center">
-                <span className="text-[10px] text-slate-600 font-medium italic">
-                  {new Date(signal.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <button className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">
-                  Trade Now <ArrowRight size={12} />
+              {/* Footer with Confidence */}
+              <div className="mt-auto border-t border-[#141414] p-6 flex justify-between items-center bg-[#141414] text-[#E4E3E0]">
+                <div className="flex flex-col">
+                  <span className="text-[8px] uppercase tracking-widest opacity-50 mb-0.5">Neural Confidence</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${signal.nnScore * 100}%` }}
+                        className="h-full bg-white transition-all"
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono font-bold">{(signal.nnScore * 100).toFixed(1)}%</span>
+                  </div>
+                </div>
+                <button className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:translate-x-1 transition-transform">
+                  TRADE <ArrowRight size={14} />
                 </button>
               </div>
             </motion.div>
@@ -156,11 +179,9 @@ const StockScreener: React.FC = () => {
         </AnimatePresence>
 
         {signals.length === 0 && (
-          <div className="col-span-full py-20 text-center space-y-4">
-            <div className="inline-flex py-4 px-4 bg-slate-900 rounded-2xl border border-slate-800 text-slate-600">
-              <AlertCircle size={48} />
-            </div>
-            <p className="text-slate-500 font-medium">No active signals found. Run a scan to find setups.</p>
+          <div className="col-span-full py-32 flex flex-col items-center justify-center space-y-6 border border-[#141414] border-dashed opacity-30">
+            <AlertCircle size={32} strokeWidth={1} />
+            <p className="text-[10px] uppercase tracking-[0.3em] font-medium">Screener engine offline</p>
           </div>
         )}
       </div>

@@ -1,0 +1,6 @@
+pandas
+numpy
+pandas_ta
+smartapi-python
+pyotp
+python-dotenv

@@ -10,6 +10,8 @@ export interface IScreenerSignal extends Document {
   time: Date;
   timeframe: string;
   strategy: string;
+  nnScore: number;
+  grade: string;
 }
 
 const ScreenerSignalSchema: Schema = new Schema({
@@ -22,6 +24,8 @@ const ScreenerSignalSchema: Schema = new Schema({
   time: { type: Date, default: Date.now },
   timeframe: { type: String, default: '1h' },
   strategy: { type: String, default: 'Supertrend Crossover' },
+  nnScore: { type: Number, default: 0 },
+  grade: { type: String, default: 'N/A' },
 });
 
 export default mongoose.model<IScreenerSignal>('ScreenerSignal', ScreenerSignalSchema);

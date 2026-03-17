@@ -14,7 +14,9 @@ import {
   Target,
   ShieldAlert,
   LogOut,
-  LogIn
+  LogIn,
+  Menu,
+  X
 } from 'lucide-react';
 import { 
   format, 
@@ -114,6 +116,7 @@ function AppContent() {
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // ── On mount: validate existing JWT ──────────────────────────────────────────
   useEffect(() => {
@@ -337,8 +340,30 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#E4E3E0] text-[#141414] font-sans selection:bg-[#141414] selection:text-[#E4E3E0]">
+      {/* Mobile Top Bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#E4E3E0] border-b border-[#141414] flex items-center justify-between px-4 z-30">
+        <h1 className="text-lg font-bold tracking-tighter italic font-serif">GreenDay Dashboard</h1>
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 border border-[#141414] text-[#141414] hover:bg-[#141414] hover:text-[#E4E3E0] transition-colors"
+        >
+          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 border-r border-[#141414] bg-[#E4E3E0] z-20 hidden lg:flex flex-col">
+      <aside className={cn(
+        "fixed left-0 top-0 h-full w-64 border-r border-[#141414] bg-[#E4E3E0] z-50 flex flex-col transition-transform duration-300 lg:translate-x-0",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
         <div className="p-6 border-b border-[#141414]">
           <h1 className="text-xl font-bold tracking-tighter italic font-serif">GreenDay Dashboard</h1>
           <p className="text-[10px] uppercase tracking-widest opacity-50 mt-1">Performance Calendar</p>
@@ -349,25 +374,25 @@ function AppContent() {
             icon={<Activity size={18} />} 
             label="Dashboard" 
             active={activeView === 'dashboard'} 
-            onClick={() => setActiveView('dashboard')}
+            onClick={() => { setActiveView('dashboard'); setIsMobileMenuOpen(false); }}
           />
           <NavItem 
             icon={<Brain size={18} />} 
             label="Playbooks" 
             active={activeView === 'playbooks'} 
-            onClick={() => setActiveView('playbooks')}
+            onClick={() => { setActiveView('playbooks'); setIsMobileMenuOpen(false); }}
           />
           <NavItem 
             icon={<TrendingUp size={18} />} 
             label="Analytics" 
             active={activeView === 'analytics'} 
-            onClick={() => setActiveView('analytics')}
+            onClick={() => { setActiveView('analytics'); setIsMobileMenuOpen(false); }}
           />
           <NavItem 
             icon={<Layout size={18} />} 
             label="Screener" 
             active={activeView === 'screener'} 
-            onClick={() => setActiveView('screener')}
+            onClick={() => { setActiveView('screener'); setIsMobileMenuOpen(false); }}
           />
         </nav>
 
@@ -396,7 +421,7 @@ function AppContent() {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 p-4 lg:p-8">
+      <main className="lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8">
         {activeView === 'dashboard' && (
           <>
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">

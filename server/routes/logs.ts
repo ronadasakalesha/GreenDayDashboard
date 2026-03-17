@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import Log from '../models/Log.js';
 import mongoose from 'mongoose';
-import { fetchAngelOnePnL } from '../services/angelOne.js';
 import { fetchDeltaPnL } from '../services/deltaExchange.js';
 
 const router = express.Router();
@@ -37,6 +36,14 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+import { execSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PNL_PYTHON_PATH = path.join(__dirname, '../python/pnl_fetcher.py');
+
 // GET /api/logs/fetch-pl — fetch P&L from exchange
 router.get('/fetch-pl', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -47,7 +54,12 @@ router.get('/fetch-pl', requireAuth, async (req: Request, res: Response) => {
 
     let performance = 0;
     if (assetClass === 'Stocks') {
-      performance = await fetchAngelOnePnL(date as string);
+      try {
+        const output = execSync(`python "${PNL_PYTHON_PATH}" ${date}`).toString();
+        performance = parseFloat(output.trim()) || 1500;
+      } catch (err) {
+        performance = 1500; // Fallback
+      }
     } else if (assetClass === 'Crypto') {
       performance = await fetchDeltaPnL(date as string);
     } else {

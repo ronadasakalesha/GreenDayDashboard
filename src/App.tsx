@@ -41,7 +41,8 @@ import { NavItem } from './components/NavItem';
 import { Calendar } from './components/Calendar';
 import { EntryForm } from './components/EntryForm';
 import { exportToCSV } from './lib/export';
-import { Coins, Briefcase, Layers } from 'lucide-react';
+import { Coins, Briefcase, Layers, Layout } from 'lucide-react';
+import StockScreener from './components/StockScreener';
 import { api, AuthUser, getToken, setToken, clearToken } from './api';
 
 const EMOTIONS: Emotion[] = ['Calm', 'FOMO', 'Stressed', 'Motivated', 'Disciplined', 'Anxious', 'Confident'];
@@ -93,7 +94,7 @@ const INITIAL_PLAYBOOKS: Playbook[] = [
   },
 ];
 
-type View = 'dashboard' | 'playbooks' | 'analytics';
+type View = 'dashboard' | 'playbooks' | 'analytics' | 'screener';
 type DateRange = '7D' | '30D' | '90D' | 'All';
 
 function AppContent() {
@@ -163,7 +164,6 @@ function AppContent() {
     clearToken();
     setUser(null);
     setLogs([]);
-    setHabits(INITIAL_HABITS);
   };
 
   const saveLog = async (newLog: DailyLog) => {
@@ -362,6 +362,12 @@ function AppContent() {
             label="Analytics" 
             active={activeView === 'analytics'} 
             onClick={() => setActiveView('analytics')}
+          />
+          <NavItem 
+            icon={<Layout size={18} />} 
+            label="Screener" 
+            active={activeView === 'screener'} 
+            onClick={() => setActiveView('screener')}
           />
         </nav>
 
@@ -731,6 +737,10 @@ function AppContent() {
               </div>
             </div>
           </div>
+        )}
+
+        {activeView === 'screener' && (
+          <StockScreener />
         )}
       </main>
 

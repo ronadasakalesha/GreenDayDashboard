@@ -55,4 +55,8 @@ export const api = {
   getLogs: () => request<any[]>('/api/logs'),
   saveLog: (log: any) => request<any>('/api/logs', { method: 'POST', body: JSON.stringify(log) }),
   deleteLog: (id: string) => request<any>(`/api/logs/${id}`, { method: 'DELETE' }),
+
+  // Screener
+  getSignals: () => request<any[]>('/api/screener/signals'),
+  triggerScan: () => request<any>('/api/screener/scan', { method: 'POST' }),
 };

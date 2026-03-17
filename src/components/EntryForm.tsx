@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { XCircle, Zap, ShieldAlert, BookOpen, Target, Activity, Coins, Briefcase } from 'lucide-react';
+import { XCircle, Zap, ShieldAlert, BookOpen, Target, Activity, Coins, Briefcase, Download, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { DailyLog, Emotion, Playbook, AssetClass } from '../types';
 
@@ -35,6 +35,7 @@ export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: Ent
     (existingLog?.assetClass as Exclude<AssetClass, 'All'>) || 'Stocks'
   );
   const [error, setError] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +70,26 @@ export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: Ent
     setSelectedPlaybooks(prev => 
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
+  };
+
+  const fetchExchangePnL = async () => {
+    setIsFetching(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/logs/fetch-pl?date=${format(date, 'yyyy-MM-dd')}&assetClass=${assetClass}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      setPerformance(data.performance);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch P&L');
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   const currencySymbol = assetClass === 'Stocks' ? '₹' : '$';
@@ -132,6 +153,16 @@ export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: Ent
                     className="w-full bg-white border border-[#141414] pl-8 pr-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#141414]"
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={fetchExchangePnL}
+                  disabled={isFetching}
+                  className="px-4 py-3 border border-[#141414] bg-white hover:bg-black/5 flex items-center gap-2 transition-colors disabled:opacity-50"
+                  title="Fetch P&L from Exchange"
+                >
+                  {isFetching ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  <span className="text-[10px] uppercase font-bold tracking-tight">Fetch</span>
+                </button>
                 <span className={cn(
                   "text-xl font-serif italic min-w-[60px] text-right",
                   performance > 0 ? "text-emerald-600" : performance < 0 ? "text-rose-600" : ""

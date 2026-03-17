@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import Log from '../models/Log.js';
 import mongoose from 'mongoose';
+import { fetchAngelOnePnL } from '../services/angelOne.js';
+import { fetchDeltaPnL } from '../services/deltaExchange.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
@@ -32,6 +34,30 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     console.error('GET /api/logs error:', error);
     res.status(500).json({ error: 'Failed to fetch logs' });
+  }
+});
+
+// GET /api/logs/fetch-pl — fetch P&L from exchange
+router.get('/fetch-pl', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { date, assetClass } = req.query;
+    if (!date || !assetClass) {
+      return res.status(400).json({ error: 'Date and assetClass are required' });
+    }
+
+    let performance = 0;
+    if (assetClass === 'Stocks') {
+      performance = await fetchAngelOnePnL(date as string);
+    } else if (assetClass === 'Crypto') {
+      performance = await fetchDeltaPnL(date as string);
+    } else {
+      return res.status(400).json({ error: 'Invalid assetClass' });
+    }
+
+    res.json({ performance });
+  } catch (error: any) {
+    console.error('FETCH-PL error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch P&L from exchange' });
   }
 });
 

@@ -188,8 +188,8 @@ function AppContent() {
     }
   };
 
-  const filteredLogs = useMemo(() => {
-    let filtered = logs.map(log => {
+  const assetFilteredLogs = useMemo(() => {
+    const logsWithNormalized = logs.map(log => {
       let normalizedPerformance = log.performance;
       if (assetFilter === 'All' && log.assetClass === 'Crypto') {
         normalizedPerformance = log.performance * USD_TO_INR;
@@ -198,8 +198,14 @@ function AppContent() {
     });
 
     if (assetFilter !== 'All') {
-      filtered = filtered.filter(log => log.assetClass === assetFilter);
+      return logsWithNormalized.filter(log => log.assetClass === assetFilter);
     }
+    
+    return logsWithNormalized;
+  }, [logs, assetFilter]);
+
+  const filteredLogs = useMemo(() => {
+    let filtered = assetFilteredLogs;
 
     if (dateRange !== 'All') {
       const now = new Date();
@@ -211,7 +217,7 @@ function AppContent() {
     }
     
     return filtered;
-  }, [logs, dateRange, assetFilter]);
+  }, [assetFilteredLogs, dateRange]);
 
   const equityData = useMemo(() => {
     let cumulative = 0;
@@ -500,7 +506,8 @@ function AppContent() {
                 </div>
                 <Calendar 
                   currentDate={currentDate} 
-                  logs={logs} 
+                  logs={assetFilteredLogs} 
+                  assetFilter={assetFilter}
                   onSelectDate={(date) => {
                     setSelectedDate(date);
                     setIsEntryOpen(true);

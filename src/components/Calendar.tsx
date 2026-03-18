@@ -10,12 +10,13 @@ import {
 } from 'date-fns';
 import { Wind, Eye, AlertCircle, Rocket, Target, AlertTriangle, Trophy } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { DailyLog, Emotion } from '../types';
+import { DailyLog, Emotion, AssetClass } from '../types';
 
 interface CalendarProps {
   currentDate: Date;
-  logs: DailyLog[];
+  logs: (DailyLog & { normalizedPerformance?: number })[];
   onSelectDate: (date: Date) => void;
+  assetFilter: AssetClass;
 }
 
 const EmotionIcon = ({ type, size = 10, className = "" }: { type: Emotion, size?: number, className?: string }) => {
@@ -31,7 +32,7 @@ const EmotionIcon = ({ type, size = 10, className = "" }: { type: Emotion, size?
   }
 };
 
-export function Calendar({ currentDate, logs, onSelectDate }: CalendarProps) {
+export function Calendar({ currentDate, logs, onSelectDate, assetFilter }: CalendarProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart);
@@ -51,7 +52,8 @@ export function Calendar({ currentDate, logs, onSelectDate }: CalendarProps) {
         const log = logs.find(l => l.date === dateStr);
         const isCurrentMonth = day.getMonth() === currentDate.getMonth();
         
-        const currencySymbol = log?.assetClass === 'Stocks' ? '₹' : '$';
+        const currencySymbol = assetFilter === 'Crypto' ? '$' : '₹';
+        const displayPerformance = log?.normalizedPerformance ?? log?.performance ?? 0;
         
         let bgColor = "bg-white";
         if (log) {
@@ -78,7 +80,7 @@ export function Calendar({ currentDate, logs, onSelectDate }: CalendarProps) {
                     "text-[10px] font-serif italic font-bold",
                     log.performance > 0 ? "text-emerald-700" : log.performance < 0 ? "text-rose-700" : "text-gray-600"
                   )}>
-                    {log.performance > 0 ? `+${currencySymbol}${log.performance.toLocaleString()}` : log.performance < 0 ? `-${currencySymbol}${Math.abs(log.performance).toLocaleString()}` : `${currencySymbol}0`}
+                    {log.performance > 0 ? `+${currencySymbol}${displayPerformance.toLocaleString()}` : log.performance < 0 ? `-${currencySymbol}${Math.abs(displayPerformance).toLocaleString()}` : `${currencySymbol}0`}
                   </div>
                 </div>
               )}
@@ -94,7 +96,7 @@ export function Calendar({ currentDate, logs, onSelectDate }: CalendarProps) {
                       "text-sm font-serif italic",
                       log.performance > 0 ? "text-emerald-400" : log.performance < 0 ? "text-rose-400" : ""
                     )}>
-                      {log.performance > 0 ? `+${currencySymbol}${log.performance.toLocaleString()}` : log.performance < 0 ? `-${currencySymbol}${Math.abs(log.performance).toLocaleString()}` : `${currencySymbol}0`} P&L
+                      {log.performance > 0 ? `+${currencySymbol}${displayPerformance.toLocaleString()}` : log.performance < 0 ? `-${currencySymbol}${Math.abs(displayPerformance).toLocaleString()}` : `${currencySymbol}0`} P&L
                     </p>
                   </div>
                   <div className="text-right">

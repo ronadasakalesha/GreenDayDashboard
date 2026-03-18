@@ -27,6 +27,7 @@ interface EntryFormProps {
 
 export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: EntryFormProps) {
   const [performance, setPerformance] = useState(existingLog?.performance || 0);
+  const [performanceInput, setPerformanceInput] = useState(existingLog?.performance?.toString() || '');
   const [discipline, setDiscipline] = useState(existingLog?.disciplineScore || 80);
   const [notes, setNotes] = useState(existingLog?.notes || '');
   const [selectedEmotions, setSelectedEmotions] = useState<Emotion[]>(existingLog?.emotions || []);
@@ -85,6 +86,7 @@ export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: Ent
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       setPerformance(data.performance);
+      setPerformanceInput(data.performance.toString());
     } catch (err: any) {
       setError(err.message || 'Failed to fetch P&L');
     } finally {
@@ -138,20 +140,39 @@ export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: Ent
             <div className="space-y-4">
               <label className="text-[10px] uppercase tracking-widest font-bold">Performance (P&L)</label>
               <div className="flex items-center gap-4">
-                <div className="relative flex-1">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm opacity-50">{currencySymbol}</span>
-                  <input 
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={performance === 0 ? '' : performance} 
-                    onChange={(e) => {
-                      setError(null);
-                      const val = parseFloat(e.target.value);
-                      setPerformance(isNaN(val) ? 0 : val);
+                <div className="relative flex-1 flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm opacity-50">{currencySymbol}</span>
+                    <input 
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={performanceInput} 
+                      onChange={(e) => {
+                        setError(null);
+                        const val = e.target.value;
+                        // Allow empty, minus sign, digits, and one decimal point
+                        if (val === '' || val === '-' || /^-?\d*\.?\d*$/.test(val)) {
+                          setPerformanceInput(val);
+                          const num = parseFloat(val);
+                          setPerformance(isNaN(num) ? 0 : num);
+                        }
+                      }}
+                      className="w-full bg-white border border-[#141414] pl-8 pr-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#141414]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newPerformance = -performance;
+                      setPerformance(newPerformance);
+                      setPerformanceInput(newPerformance === 0 ? '-' : newPerformance.toString());
                     }}
-                    className="w-full bg-white border border-[#141414] pl-8 pr-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#141414]"
-                  />
+                    className="px-3 py-3 border border-[#141414] bg-white hover:bg-black/5 flex items-center justify-center transition-colors font-bold text-xs"
+                    title="Toggle Positive/Negative"
+                  >
+                    ±
+                  </button>
                 </div>
                 <button
                   type="button"

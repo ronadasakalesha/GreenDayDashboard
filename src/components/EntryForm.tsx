@@ -174,7 +174,7 @@ export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: Ent
                     ±
                   </button>
                 </div>
-                <button
+                {/* <button
                   type="button"
                   onClick={fetchExchangePnL}
                   disabled={isFetching}
@@ -183,7 +183,7 @@ export function EntryForm({ date, onClose, onSave, existingLog, playbooks }: Ent
                 >
                   {isFetching ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                   <span className="text-[10px] uppercase font-bold tracking-tight">Fetch</span>
-                </button>
+                </button> */}
                 <span className={cn(
                   "text-xl font-serif italic min-w-[60px] text-right",
                   performance > 0 ? "text-emerald-600" : performance < 0 ? "text-rose-600" : ""
